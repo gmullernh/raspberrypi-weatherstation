@@ -1,2 +1,2 @@
 # raspberrypi-weatherstation
-A simple weather station using Raspberry Pi, DHT11 sensor and Grafana.
+A simple weather station using Raspberry Pi, DHT11 sensor, Prometheus and Grafana.
