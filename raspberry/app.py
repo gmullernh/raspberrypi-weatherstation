@@ -10,18 +10,22 @@ sensor = Adafruit_DHT.DHT11
 sensor_pin = 2 # this must match with the pin you connected the data wire.
 
 # Add webserver
-from flask import Flask
+from flask import Flask, current_app
 from flask_cors import CORS, cross_origin
 import json
 from datetime import date, datetime
 
-app = Flask(__name__)
+app = Flask(__name__, static_url_path='')
 CORS(app)
+
+@app.route('/', methods=['GET'])
+def index():
+    return current_app.send_static_file('index.html')
 
 @app.route('/api', methods=['GET'], defaults={'dataFormat': None})
 @app.route('/api/<string:dataFormat>', methods=['GET'])
 @cross_origin()
-def metrics(dataFormat):
+def api(dataFormat):
     umid, temp = Adafruit_DHT.read_retry(sensor, sensor_pin)
     x = { "temperature" : temp, "humidity": umid, "datetime": datetime.now().isoformat() }
     if umid is not None and temp is not None:
