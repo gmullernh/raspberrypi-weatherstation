@@ -26,14 +26,16 @@ def index():
 @app.route('/api/<string:dataFormat>', methods=['GET'])
 @cross_origin()
 def api(dataFormat):
-    umid, temp = Adafruit_DHT.read_retry(sensor, sensor_pin)
-    x = { "temperature" : temp, "humidity": umid, "datetime": datetime.now().isoformat() }
-    if umid is not None and temp is not None:
-        if dataFormat is not None and dataFormat == "json":
-            return json.dumps(x, default=json_serial), 200, {'Content-Type': 'application/json; charset=utf-8'}
-        return '# HELP local_temp local temperature\n# TYPE local_temp gauge\nlocal_temp {}\n# HELP local_humidity local humidity\n# TYPE local_humidity gauge\nlocal_humidity {}\n'.format(int(temp), int(umid)), 200, {'Content-Type': 'text/plain; charset=utf-8'}
+    humidity, temperature = Adafruit_DHT.read_retry(sensor, sensor_pin)
+    contentType = setContentType(dataFormat)
+
+    humidity = validateBoundaries(humidity, 0, 100)
+    temperature = validateBoundaries(temperature, 0, 125)
+
+    if humidity != -255 or temperature != -255:
+        return formatted_output(humidity, temperature, contentType), 200, {'Content-Type': contentType}
     else:
-        return 'Could not read from DHT11.', 200, {'Content-Type': 'text/plain; charset=utf-8'}
+        return 'Could not read from DHT11.', 424, {'Content-Type': 'text/plain; charset=utf-8'}
 
 # https://stackoverflow.com/questions/11875770/how-to-overcome-datetime-datetime-not-json-serializable
 def json_serial(obj):
@@ -42,3 +44,19 @@ def json_serial(obj):
     if isinstance(obj, (datetime, date)):
         return obj.isoformat()
     raise TypeError ("Type %s not serializable" % type(obj))
+
+def validateBoundaries(value, lower, upper):
+    if value > lower and value < upper:
+        return value
+    return -255
+
+def setContentType(dataFormat):
+    if dataFormat is not None and dataFormat == "json":
+        return 'application/json; charset=utf-8'
+    return 'text/plain; charset=utf-8'
+
+def formatted_output(humidity, temperature, contentType):
+    if contentType is 'application/json; charset=utf-8':
+        x = { "temperature" : temperature, "humidity": humidity, "datetime": datetime.now().isoformat() }
+        return json.dumps(x, default=json_serial)
+    return '# HELP local_temp local temperature\n# TYPE local_temp gauge\nlocal_temp {}\n# HELP local_humidity local humidity\n# TYPE local_humidity gauge\nlocal_humidity {}\n'.format(temperature, humidity)
