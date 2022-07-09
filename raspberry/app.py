@@ -15,12 +15,8 @@ from flask_cors import CORS, cross_origin
 import json
 from datetime import date, datetime
 
-app = Flask(__name__, static_url_path='')
+app = Flask(__name__)
 CORS(app)
-
-@app.route('/', methods=['GET'])
-def index():
-    return current_app.send_static_file('index.html')
 
 @app.route('/api', methods=['GET'], defaults={'dataFormat': None})
 @app.route('/api/<string:dataFormat>', methods=['GET'])
@@ -56,7 +52,10 @@ def setContentType(dataFormat):
     return 'text/plain; charset=utf-8'
 
 def formatted_output(humidity, temperature, contentType):
-    if contentType is 'application/json; charset=utf-8':
+    if contentType == 'application/json; charset=utf-8':
         x = { "temperature" : temperature, "humidity": humidity, "datetime": datetime.now().isoformat() }
         return json.dumps(x, default=json_serial)
     return '# HELP local_temp local temperature\n# TYPE local_temp gauge\nlocal_temp {}\n# HELP local_humidity local humidity\n# TYPE local_humidity gauge\nlocal_humidity {}\n'.format(temperature, humidity)
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=80)
